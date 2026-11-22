@@ -169,4 +169,57 @@ export const deleteDocument = async (documentId, ownerId = 'anonymous_dev') => {
   }
 };
 
+// ----------------- PHASE 2: INTELLIGENT LANGGRAPH CHAT ORCHESTRATION -----------------
+
+export const sendChatQuery = async (conversationId, message, documentId = null, userId = 'anonymous_citizen') => {
+  try {
+    const trimmed = (message || '').trim();
+    if (!trimmed) {
+      return { success: false, data: null, error: 'Please enter a query message.' };
+    }
+    const response = await apiClient.post('/api/v1/chat/query', {
+      conversation_id: conversationId,
+      message: trimmed,
+      document_id: documentId,
+      user_id: userId,
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to process intelligent query via LangGraph.') };
+  }
+};
+
+export const resumeChatQuery = async (conversationId, answers, userId = 'anonymous_citizen') => {
+  try {
+    const response = await apiClient.post('/api/v1/chat/resume', {
+      conversation_id: conversationId,
+      answers,
+      user_id: userId,
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to resume interrupted workflow.') };
+  }
+};
+
+export const getChatHistory = async (conversationId) => {
+  try {
+    const response = await apiClient.get(`/api/v1/chat/history/${conversationId}`);
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to retrieve conversation history.') };
+  }
+};
+
+export const listChatConversations = async (userId = 'anonymous_citizen') => {
+  try {
+    const response = await apiClient.get('/api/v1/chat/conversations', {
+      params: { user_id: userId },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to list active conversations.') };
+  }
+};
+
 export default apiClient;

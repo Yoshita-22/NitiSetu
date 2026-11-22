@@ -7,11 +7,11 @@ class Settings(BaseSettings):
     """Application configuration settings loaded from environment variables."""
 
     PROJECT_NAME: str = "NitiSetu API"
-    VERSION: str = "1.1.0"
+    VERSION: str = "2.0.0"
     DESCRIPTION: str = (
         "NitiSetu – AI-Powered Multilingual Civic Information Assistant API. "
-        "Provides plain-language translations, legal statutory retrieval, welfare scheme eligibility, "
-        "and document processing for citizen empowerment."
+        "Phase 2: Intelligent Query Orchestration using LangGraph, Groq intent classification, "
+        "human-in-the-loop interrupts, and multi-source civic data aggregation."
     )
     ENVIRONMENT: str = "development"
     API_V1_STR: str = "/api/v1"
@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     # Source C: PDF Document Upload Configuration
     UPLOAD_DIRECTORY: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
+
+    # Phase 2: Groq LLM Configuration for Intent Classification & Aggregation
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_TIMEOUT_SECONDS: float = 10.0
+
+    # Phase 2: Checkpointing & Supabase Persistence
+    POSTGRES_CHECKPOINTER_URI: Optional[str] = None
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_KEY: Optional[str] = None
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

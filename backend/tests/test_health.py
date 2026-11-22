@@ -16,6 +16,7 @@ def test_root_endpoint():
     assert "laws" in data["modules"]
     assert "schemes" in data["modules"]
     assert "documents" in data["modules"]
+    assert "chat" in data["modules"]
 
 
 def test_health_check_endpoint():
@@ -25,7 +26,7 @@ def test_health_check_endpoint():
     data = response.json()
     assert data["status"] == "healthy"
     assert "NitiSetu API" in data["application"]
-    assert data["version"] == "1.1.0"
+    assert data["version"] == "2.0.0"
 
 
 def test_chat_test_valid_message():

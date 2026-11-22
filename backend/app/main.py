@@ -50,6 +50,7 @@ def create_application() -> FastAPI:
                 "laws": f"{settings.API_V1_STR}/laws/search",
                 "schemes": f"{settings.API_V1_STR}/schemes",
                 "documents": f"{settings.API_V1_STR}/documents/upload",
+                "chat": f"{settings.API_V1_STR}/chat/query",
             },
         }
 
