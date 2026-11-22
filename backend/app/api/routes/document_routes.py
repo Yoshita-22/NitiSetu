@@ -32,11 +32,11 @@ router = APIRouter()
 )
 async def upload_document(
     file: UploadFile = File(..., description="PDF document file (max 10MB)"),
-    x_user_id: Optional[str] = Header("anonymous_dev", description="Optional citizen / owner identifier"),
+    x_user_id: Optional[str] = Header("anonymous_citizen", description="Optional citizen / owner identifier"),
 ) -> DocumentUploadResponse:
     """Upload PDF, extract text, and index into ChromaDB."""
     try:
-        return await document_service.process_pdf_upload(file, owner_id=x_user_id or "anonymous_dev")
+        return await document_service.process_pdf_upload(file, owner_id=x_user_id or "anonymous_citizen")
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e.message))
     except FileProcessingError as e:
@@ -50,7 +50,7 @@ async def upload_document(
     description="Returns metadata for all documents uploaded by the authenticated user.",
 )
 def list_documents(
-    x_user_id: Optional[str] = Header("anonymous_dev", description="Citizen / owner identifier"),
+    x_user_id: Optional[str] = Header("anonymous_citizen", description="Citizen / owner identifier"),
 ) -> List[DocumentMetadata]:
     """List documents for the current user."""
     return document_service.list_documents(owner_id=x_user_id)
@@ -64,11 +64,11 @@ def list_documents(
 )
 def index_document(
     document_id: str,
-    x_user_id: Optional[str] = Header("anonymous_dev", description="Owner identifier for authorization"),
+    x_user_id: Optional[str] = Header("anonymous_citizen", description="Owner identifier for authorization"),
 ) -> DocumentIndexResponse:
     """Trigger or retry document indexing."""
     try:
-        return document_service.index_document(document_id, owner_id=x_user_id or "anonymous_dev")
+        return document_service.index_document(document_id, owner_id=x_user_id or "anonymous_citizen")
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e.message))
     except ValidationError as e:
@@ -152,11 +152,11 @@ async def query_all_documents(
 )
 def get_document_chunks(
     document_id: str,
-    x_user_id: Optional[str] = Header("anonymous_dev", description="Owner identifier for authorization"),
+    x_user_id: Optional[str] = Header("anonymous_citizen", description="Owner identifier for authorization"),
 ) -> DocumentChunksResponse:
     """Retrieve indexed chunks for a document."""
     try:
-        return document_service.get_document_chunks(document_id, owner_id=x_user_id or "anonymous_dev")
+        return document_service.get_document_chunks(document_id, owner_id=x_user_id or "anonymous_citizen")
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e.message))
     except ValidationError as e:
@@ -199,11 +199,11 @@ def get_document_pages(document_id: str) -> DocumentPagesResponse:
 )
 def delete_document(
     document_id: str,
-    x_user_id: Optional[str] = Header("anonymous_dev", description="Owner identifier for authorization verification"),
+    x_user_id: Optional[str] = Header("anonymous_citizen", description="Owner identifier for authorization verification"),
 ) -> BaseResponse:
     """Delete uploaded document file, vector chunks, and metadata."""
     try:
-        document_service.delete_document(document_id, owner_id=x_user_id)
+        document_service.delete_document(document_id, owner_id=x_user_id or "anonymous_citizen")
         return BaseResponse(success=True, message=f"Document '{document_id}' successfully deleted.")
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e.message))

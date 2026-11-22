@@ -78,8 +78,14 @@ async def process_chat_query(payload: ChatQueryRequest) -> ChatQueryResponse:
     config = {"configurable": {"thread_id": payload.conversation_id}}
 
     try:
-        # 3. Asynchronously invoke LangGraph compiled workflow
-        result = await compiled_nitsetu_workflow.ainvoke(initial_state, config=config)
+        # Check if thread is currently paused at an interrupt (waiting for citizen input)
+        state_snapshot = await compiled_nitsetu_workflow.aget_state(config)
+        if state_snapshot.next:
+            logger.info(f"Resuming paused workflow for thread {payload.conversation_id} with natural message.")
+            result = await compiled_nitsetu_workflow.ainvoke(Command(resume=payload.message), config=config)
+        else:
+            # 3. Asynchronously invoke LangGraph compiled workflow
+            result = await compiled_nitsetu_workflow.ainvoke(initial_state, config=config)
 
         # 4. Handle human-in-the-loop interruption (e.g. eligibility questionnaire)
         interrupts = result.get("__interrupt__")
@@ -165,9 +171,10 @@ async def process_chat_query(payload: ChatQueryRequest) -> ChatQueryResponse:
 
     except Exception as e:
         logger.exception(f"Error processing query for {payload.conversation_id}: {e}")
+        err_msg = str(e).strip() or f"{e.__class__.__name__}"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"LangGraph execution error: {str(e)}",
+            detail=f"LangGraph execution error: {err_msg}",
         )
 
 

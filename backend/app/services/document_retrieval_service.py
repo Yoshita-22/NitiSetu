@@ -33,7 +33,10 @@ class DocumentRetrievalService:
             return []
 
         k = top_k or self.default_top_k
-        cutoff = similarity_threshold if similarity_threshold is not None else self.default_threshold
+        if similarity_threshold is not None:
+            cutoff = similarity_threshold
+        else:
+            cutoff = 0.20 if document_id else self.default_threshold
 
         # 1. Generate query vector embedding locally
         query_vector = embedding_service.embed_query(trimmed_query)
@@ -51,6 +54,38 @@ class DocumentRetrievalService:
             f"Retrieved {len(matched_chunks)} relevant chunk(s) for query: '{trimmed_query[:40]}...' "
             f"(user={user_id}, doc={document_id}, threshold={cutoff})"
         )
+
+        # 3. Log top-k chunks directly to terminal for inspection
+        separator = "=" * 80
+        thin_sep = "-" * 80
+        print(f"\n{separator}", flush=True)
+        print(f"🔍 [RAG RETRIEVAL] TOP-{k} CHUNKS (Found: {len(matched_chunks)}, Cutoff: {cutoff:.2f})", flush=True)
+        print(f"Query: \"{trimmed_query}\"", flush=True)
+        print(f"Document ID: {document_id or 'ALL_DOCUMENTS'} | User: {user_id}", flush=True)
+        print(separator, flush=True)
+
+        if not matched_chunks:
+            print("⚠️ No chunks met the similarity threshold.", flush=True)
+        else:
+            for idx, c in enumerate(matched_chunks, 1):
+                meta = c.get("metadata", {})
+                p_start = meta.get("page_start", meta.get("page_number", 1))
+                p_end = meta.get("page_end", p_start)
+                page_str = f"Page {p_start}" if p_start == p_end else f"Pages {p_start}-{p_end}"
+                filename = meta.get("source_filename", "document.pdf")
+                heading = meta.get("section_heading")
+                heading_str = f" | Section: '{heading}'" if heading else ""
+                sim = c.get("similarity", 0.0)
+                content = c.get("content", "").strip()
+
+                print(f"\n📄 [Chunk {idx}/{len(matched_chunks)}] | {filename} ({page_str}){heading_str} | Similarity: {sim:.2%}", flush=True)
+                print(f"ID: {c.get('chunk_id')}", flush=True)
+                print(thin_sep, flush=True)
+                print(content, flush=True)
+                print(thin_sep, flush=True)
+
+        print(f"{separator}\n", flush=True)
+
         return matched_chunks
 
     def format_source_references(

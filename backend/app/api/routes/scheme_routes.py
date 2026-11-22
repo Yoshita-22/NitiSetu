@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Query
 from app.core.exceptions import NotFoundError
+from app.schemas.eligibility_schemas import AssessmentStatusResponse, StartAssessmentRequest
 from app.schemas.scheme_schemas import (
     EligibilityEvaluationRequest,
     EligibilityEvaluationResponse,
@@ -8,6 +9,7 @@ from app.schemas.scheme_schemas import (
     Scheme,
     SchemeSummary,
 )
+from app.services.answer_collection_service import answer_collection_service
 from app.services.eligibility_service import eligibility_service
 from app.services.scheme_service import scheme_service
 
@@ -52,16 +54,40 @@ def get_scheme(scheme_id: str) -> Scheme:
         raise HTTPException(status_code=404, detail=str(e.message))
 
 
+@router.post(
+    "/{scheme_id}/eligibility/start",
+    response_model=AssessmentStatusResponse,
+    summary="Start Multi-Turn Eligibility Assessment for Scheme",
+    description="Initializes a multi-turn conversational assessment session for this specific scheme.",
+)
+def start_scheme_eligibility_assessment(
+    scheme_id: str, payload: StartAssessmentRequest
+) -> AssessmentStatusResponse:
+    """Start an interactive eligibility assessment session for the given scheme."""
+    try:
+        answer_collection_service.start_assessment(
+            conversation_id=payload.conversation_id,
+            scheme_id=scheme_id,
+            language=payload.language,
+            user_id=payload.user_id,
+        )
+        return answer_collection_service.get_assessment_status(payload.conversation_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e.message))
+
+
 @router.get(
     "/{scheme_id}/eligibility/questions",
     response_model=EligibilityQuestionsResponse,
     summary="Get Scheme-Specific Eligibility Questionnaire",
     description="Retrieves the structured questionnaire configured for deterministic eligibility assessment of this scheme.",
 )
-def get_eligibility_questions(scheme_id: str) -> EligibilityQuestionsResponse:
+def get_eligibility_questions(
+    scheme_id: str, lang: str = Query("en", description="Language code (en, te, hi)")
+) -> EligibilityQuestionsResponse:
     """Retrieve eligibility questionnaire for a specific scheme."""
     try:
-        return eligibility_service.get_questions_for_scheme(scheme_id)
+        return eligibility_service.get_questions_for_scheme(scheme_id, language=lang)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e.message))
 

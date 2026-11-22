@@ -3,10 +3,12 @@ from typing import Any, Dict, List
 from langgraph.types import interrupt
 from app.graph.state import NitiSetuState
 from app.repositories.scheme_repository import scheme_repository
+from app.services.answer_collection_service import answer_collection_service
 from app.services.document_service import document_service
 from app.services.eligibility_service import eligibility_service
 from app.services.intent_classifier_service import intent_classifier_service
 from app.services.nyaykosh_service import nyaykosh_service
+from app.services.questionnaire_mapping_service import questionnaire_mapping_service
 from app.services.response_aggregator_service import ResponseAggregatorService
 from app.services.scheme_service import scheme_service
 
@@ -132,8 +134,8 @@ async def document_retrieval_node(state: NitiSetuState) -> Dict[str, Any]:
         }
 
 
-def eligibility_workflow_node(state: NitiSetuState) -> Dict[str, Any]:
-    """Sequential eligibility workflow with human-in-the-loop interruption."""
+async def eligibility_workflow_node(state: NitiSetuState) -> Dict[str, Any]:
+    """Sequential eligibility workflow with multi-turn collection and human-in-the-loop interruption."""
     entities = state.get("extracted_entities", {})
     scheme_id = entities.get("scheme_id")
 
@@ -148,53 +150,124 @@ def eligibility_workflow_node(state: NitiSetuState) -> Dict[str, Any]:
         scheme = matches[0] if matches else scheme_repository.get_by_id("PM_KISAN")
 
     scheme_id = scheme.scheme_id
+    conversation_id = state.get("conversation_id", "default_thread")
+    language = state.get("language", "en")
+    user_id = state.get("user_id", "anonymous_citizen")
 
-    # 2. Retrieve scheme questionnaire
-    q_resp = eligibility_service.get_questions_for_scheme(scheme_id)
-
-    # 3. Consolidate currently available answers
-    current_answers = dict(state.get("applicant_details", {}))
-    if entities.get("applicant_info"):
-        current_answers.update(entities["applicant_info"])
-
-    # 4. Check for missing required questions
-    missing = [q for q in q_resp.questions if q.required and q.id not in current_answers]
-
-    if missing:
-        pending_questions_payload = [
-            {
-                "field": q.id,
-                "question": q.label,
-                "input_type": q.type,
-                "options": q.options,
-                "help_text": q.help_text,
-            }
-            for q in missing
-        ]
-
-        logger.info(
-            f"Eligibility info incomplete for {scheme_id}. Pausing workflow with LangGraph interrupt() for {len(missing)} question(s)."
+    # 2. Get or initialize active AssessmentState in AnswerCollectionService
+    assessment = answer_collection_service.get_assessment(conversation_id)
+    if not assessment or assessment.scheme_id != scheme_id:
+        assessment = answer_collection_service.start_assessment(
+            conversation_id=conversation_id,
+            scheme_id=scheme_id,
+            language=language,
+            user_id=user_id,
         )
 
-        # Trigger human-in-the-loop pause. Checkpoint is persisted by LangGraph.
-        resumed_answers = interrupt({
+    # 3. Synchronize any upfront applicant details or entities
+    initial_details = dict(state.get("applicant_details", {}))
+    if entities.get("applicant_info"):
+        initial_details.update(entities["applicant_info"])
+
+    if initial_details:
+        answer_collection_service.submit_direct_answers(
+            conversation_id=conversation_id,
+            answers=initial_details,
+            language=language,
+        )
+        assessment = answer_collection_service.get_assessment(conversation_id)
+
+    # 4. If assessment is brand new (turn_count == 0) and user_query has potential criteria, extract answers from it
+    if assessment.turn_count == 0 and state.get("user_query"):
+        await answer_collection_service.process_user_message(
+            conversation_id=conversation_id,
+            message=state["user_query"],
+            language=language,
+        )
+        assessment = answer_collection_service.get_assessment(conversation_id)
+
+    # 5. Multi-turn collection loop with LangGraph interrupt()
+    all_questions = questionnaire_mapping_service.get_questionnaire(scheme_id, language=assessment.language)
+    required_ids = [q.id for q in all_questions if q.required]
+
+    while not assessment.is_ready_for_evaluation(required_ids):
+        next_q = answer_collection_service.get_next_question(assessment)
+        unanswered_items = [q for q in all_questions if q.id in assessment.unanswered_question_ids]
+        if not unanswered_items and next_q:
+            unanswered_items = [next_q]
+
+        if assessment.clarification_required and next_q:
+            rule_hint = next_q.validation_rule.clarification_hint if next_q.validation_rule else None
+            ans_prompt = assessment.answers.get(next_q.id).clarification_prompt if next_q.id in assessment.answers else None
+            prompt_msg = rule_hint or ans_prompt or f"Could you please clarify: {next_q.label}?"
+        elif next_q:
+            prompt_msg = f"To assess your eligibility for {scheme.scheme_name}: {next_q.label}"
+            if next_q.help_text:
+                prompt_msg += f" ({next_q.help_text})"
+        else:
+            prompt_msg = f"To assess your eligibility for {scheme.scheme_name}, please provide the following details:"
+
+        interrupt_payload = {
             "type": "eligibility_questions",
             "scheme_id": scheme.scheme_id,
             "scheme_name": scheme.scheme_name,
-            "questions": pending_questions_payload,
-            "message": f"To assess your eligibility for {scheme.scheme_name}, please provide the following details:",
-        })
+            "current_question": next_q.to_pending_question().model_dump() if next_q else None,
+            "questions": [q.to_pending_question().model_dump() for q in unanswered_items],
+            "message": prompt_msg,
+            "clarification_required": assessment.clarification_required,
+            "validation_errors": list(assessment.validation_errors),
+            "turn_count": assessment.turn_count,
+        }
 
-        if isinstance(resumed_answers, dict):
-            current_answers.update(resumed_answers)
+        logger.info(
+            f"Eligibility info incomplete for {scheme_id} in {conversation_id}. "
+            f"Pausing workflow via interrupt() for question '{next_q.id if next_q else 'pending'}'."
+        )
 
-    # 5. Evaluate eligibility deterministically
-    eval_response = eligibility_service.evaluate_eligibility(scheme_id, current_answers)
+        resumed_input = interrupt(interrupt_payload)
+        if resumed_input is None:
+            break
+
+        # Process user answer(s) from resume
+        if isinstance(resumed_input, dict):
+            if "message" in resumed_input and len(resumed_input) == 1:
+                await answer_collection_service.process_user_message(
+                    conversation_id=conversation_id,
+                    message=resumed_input["message"],
+                    language=assessment.language,
+                )
+            elif "answers" in resumed_input and isinstance(resumed_input["answers"], dict):
+                answer_collection_service.submit_direct_answers(
+                    conversation_id=conversation_id,
+                    answers=resumed_input["answers"],
+                    language=assessment.language,
+                )
+            else:
+                answer_collection_service.submit_direct_answers(
+                    conversation_id=conversation_id,
+                    answers=resumed_input,
+                    language=assessment.language,
+                )
+        elif isinstance(resumed_input, str):
+            await answer_collection_service.process_user_message(
+                conversation_id=conversation_id,
+                message=resumed_input,
+                language=assessment.language,
+            )
+
+        assessment = answer_collection_service.get_assessment(conversation_id)
+
+    # 6. Evaluation handoff
+    clean_data = assessment.get_clean_applicant_data()
+    eval_response = eligibility_service.evaluate_eligibility(scheme_id, clean_data)
+
+    assessment.collection_status = "COMPLETED"
+    answer_collection_service.save_assessment(assessment)
 
     return {
         "scheme_results": [scheme.model_dump()],
         "eligibility_results": eval_response.model_dump(),
-        "applicant_details": current_answers,
+        "applicant_details": clean_data,
         "task_status": {"eligibility_workflow": "COMPLETED"},
     }
 

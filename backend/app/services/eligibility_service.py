@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 from app.core.exceptions import NotFoundError
 from app.repositories.scheme_repository import scheme_repository
+from app.services.questionnaire_mapping_service import questionnaire_mapping_service
 from app.schemas.scheme_schemas import (
     EligibilityConditionResult,
     EligibilityEvaluationResponse,
@@ -176,14 +177,17 @@ class EligibilityEvaluationService:
         ],
     }
 
-    def get_questions_for_scheme(self, scheme_id: str) -> EligibilityQuestionsResponse:
-        """Return the scheme-specific questionnaire."""
+    def get_questions_for_scheme(
+        self, scheme_id: str, language: str = "en"
+    ) -> EligibilityQuestionsResponse:
+        """Return the scheme-specific questionnaire, localized in target language."""
         scheme = scheme_repository.get_by_id(scheme_id)
         if not scheme:
             raise NotFoundError(f"Scheme with ID '{scheme_id}' was not found.")
 
-        normalized_id = scheme.scheme_id.upper()
-        questions = self.SCHEME_QUESTIONNAIRES.get(normalized_id, [])
+        questions = questionnaire_mapping_service.get_questionnaire(
+            scheme.scheme_id, language=language
+        )
         return EligibilityQuestionsResponse(
             scheme_id=scheme.scheme_id,
             scheme_name=scheme.scheme_name,

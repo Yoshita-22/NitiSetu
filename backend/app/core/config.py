@@ -50,7 +50,29 @@ class Settings(BaseSettings):
     DOCUMENT_CHUNK_SIZE: int = 800
     DOCUMENT_CHUNK_OVERLAP: int = 150
     DOCUMENT_RETRIEVAL_TOP_K: int = 5
-    DOCUMENT_RETRIEVAL_THRESHOLD: float = 0.35
+    DOCUMENT_RETRIEVAL_THRESHOLD: float = 0.20
+
+    # LLM: Google Gemini Configuration (Multilingual Assistant)
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.0-flash-lite"
+    GEMINI_TIMEOUT_SECONDS: float = 15.0
+
+    # Speech-to-Text: AssemblyAI Configuration (Multilingual STT)
+    ASSEMBLYAI_API_KEY: Optional[str] = None
+    ASSEMBLYAI_BASE_URL: str = "https://api.assemblyai.com/v2"
+    ASSEMBLYAI_TIMEOUT_SECONDS: float = 30.0
+
+    # Text-to-Speech: Google Gemini TTS Configuration (Multilingual TTS)
+    GEMINI_TTS_MODEL: str = "gemini-2.0-flash"
+    GEMINI_VOICE_NAME: str = "Puck"
+
+    # Legacy Voice Provider (Preserved as fallback)
+    SARVAM_API_KEY: Optional[str] = None
+    SARVAM_BASE_URL: str = "https://api.sarvam.ai"
+    SARVAM_STT_MODEL: str = "saarika:v2"
+    SARVAM_TTS_MODEL: str = "bulbul:v3"
+    SARVAM_DEFAULT_SPEAKER: str = "kavya"
+    SARVAM_TIMEOUT_SECONDS: float = 15.0
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

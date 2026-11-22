@@ -142,6 +142,17 @@ class DeterministicFallbackClassifier:
                 reasoning="Query requests both welfare scheme explanation and personal eligibility assessment.",
             )
 
+        # Single intent eligibility check takes precedence when citizen asks for qualification/eligibility
+        if has_scheme_kw and is_eligibility_req:
+            return IntentClassification(
+                intent=IntentType.SCHEME_ELIGIBILITY,
+                detected_language=detected_lang,
+                confidence_score=0.92,
+                extracted_entities=entities,
+                source="fallback",
+                reasoning="Citizen asking for personal qualification or assessment for a government scheme.",
+            )
+
         if has_scheme_kw and has_law_kw:
             return IntentClassification(
                 intent=IntentType.MULTI_INTENT,
@@ -151,17 +162,6 @@ class DeterministicFallbackClassifier:
                 extracted_entities=entities,
                 source="fallback",
                 reasoning="Query requests information about a government scheme and its legal governing statute.",
-            )
-
-        # Single intent paths
-        if has_scheme_kw and is_eligibility_req:
-            return IntentClassification(
-                intent=IntentType.SCHEME_ELIGIBILITY,
-                detected_language=detected_lang,
-                confidence_score=0.92,
-                extracted_entities=entities,
-                source="fallback",
-                reasoning="Citizen asking for personal qualification or assessment for a government scheme.",
             )
 
         if has_scheme_kw:
@@ -244,7 +244,7 @@ class IntentClassifierService:
     async def classify_query(
         self, query: str, document_id: Optional[str] = None
     ) -> IntentClassification:
-        """Classify query with Groq LLM, with fallback on error or missing credentials."""
+        """Classify query with Google Gemini or Groq LLM, with deterministic fallback."""
         trimmed = (query or "").strip()
         if not trimmed:
             return IntentClassification(
@@ -255,11 +255,6 @@ class IntentClassifierService:
                 source="fallback",
                 reasoning="Empty input query.",
             )
-
-        client = self._get_client()
-        if not client:
-            logger.info("Groq API key not configured. Using deterministic fallback classifier.")
-            return DeterministicFallbackClassifier.classify(trimmed, document_id=document_id)
 
         system_prompt = (
             "You are the central NitiSetu Intent Classifier and Entity Extractor. "
@@ -283,19 +278,40 @@ class IntentClassifierService:
             '  "reasoning": "brief explanation",\n'
             '  "extracted_entities": {\n'
             '    "scheme_name": string or null,\n'
-            '    "scheme_id": string or null,\n'
-            '    "law_name": string or null,\n'
-            '    "act_name": string or null,\n'
+            '    "law_act_name": string or null,\n'
             '    "section_number": string or null,\n'
-            '    "legal_topic": string or null,\n'
-            '    "document_id": string or null,\n'
-            '    "applicant_info": {},\n'
-            '    "location_or_state": string or null,\n'
-            '    "missing_or_ambiguous": []\n'
+            '    "article_number": string or null,\n'
+            '    "keywords": [string]\n'
             "  }\n"
-            "}\n"
-            "Do NOT hallucinate or answer the query itself. Return JSON only."
+            "}"
         )
+
+        # 1. Try Gemini Multilingual LLM if configured
+        if settings.GEMINI_API_KEY:
+            try:
+                from app.services.gemini_llm_service import gemini_llm_service
+                prompt = f"User query: {trimmed}\n\nClassify intent and extract entities as valid JSON."
+                parsed = await gemini_llm_service.generate_json(prompt, system_instruction=system_prompt)
+                if parsed and "intent" in parsed and parsed["intent"] in IntentType.__members__:
+                    return IntentClassification(
+                        intent=IntentType(parsed["intent"]),
+                        secondary_intents=[
+                            IntentType(i) for i in parsed.get("secondary_intents", []) if i in IntentType.__members__
+                        ],
+                        detected_language=parsed.get("detected_language", "en"),
+                        confidence_score=float(parsed.get("confidence_score", 0.95)),
+                        extracted_entities=ExtractedEntities(**parsed.get("extracted_entities", {})),
+                        source="gemini",
+                        reasoning=parsed.get("reasoning", "Classified via Google Gemini multilingual LLM"),
+                    )
+            except Exception as e:
+                logger.warning(f"Gemini intent classification fallback: {str(e)}")
+
+        # 2. Try Groq LLM if configured
+        client = self._get_client()
+        if not client:
+            logger.info("LLM API key not configured. Using deterministic fallback classifier.")
+            return DeterministicFallbackClassifier.classify(trimmed, document_id=document_id)
 
         user_content = f"Query: {trimmed}"
         if document_id:

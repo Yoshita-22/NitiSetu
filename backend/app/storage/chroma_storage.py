@@ -147,16 +147,27 @@ class ChromaStorage:
                 threshold=cutoff,
             )
 
-        # 2. ChromaDB Filter Formulation (Mandatory user_id isolation)
+        # 2. ChromaDB Filter Formulation (Mandatory user_id isolation with anonymous alias support)
+        anonymous_ids = {"anonymous_citizen", "anonymous_dev"}
+        allowed_users = [user_id]
+        if user_id in anonymous_ids:
+            allowed_users = list(anonymous_ids)
+
+        user_filter = (
+            {"user_id": {"$in": allowed_users}}
+            if len(allowed_users) > 1
+            else {"user_id": {"$eq": allowed_users[0]}}
+        )
+
         if document_id:
             where_filter = {
                 "$and": [
-                    {"user_id": {"$eq": user_id}},
+                    user_filter,
                     {"document_id": {"$eq": document_id}},
                 ]
             }
         else:
-            where_filter = {"user_id": {"$eq": user_id}}
+            where_filter = user_filter
 
         try:
             with self._lock:
@@ -206,11 +217,13 @@ class ChromaStorage:
     ) -> List[Dict[str, Any]]:
         """Cosine similarity search for in-memory fallback store."""
         scored: List[Tuple[float, Dict[str, Any]]] = []
+        anonymous_ids = {"anonymous_citizen", "anonymous_dev"}
 
         with self._lock:
             for item in self._in_memory_docs.values():
-                # Enforce user isolation
-                if item["user_id"] != user_id:
+                # Enforce user isolation with anonymous alias support
+                item_user = item.get("user_id", "")
+                if item_user != user_id and not (item_user in anonymous_ids and user_id in anonymous_ids):
                     continue
                 # Enforce document filter
                 if document_id and item["document_id"] != document_id:

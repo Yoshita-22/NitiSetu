@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -123,7 +123,7 @@ export const evaluateSchemeEligibility = async (schemeId, applicantData) => {
 
 // ----------------- SOURCE C: DOCUMENT INTELLIGENCE (PDF) -----------------
 
-export const uploadDocument = async (file, ownerId = 'anonymous_dev') => {
+export const uploadDocument = async (file, ownerId = 'anonymous_citizen') => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -133,6 +133,7 @@ export const uploadDocument = async (file, ownerId = 'anonymous_dev') => {
         'Content-Type': 'multipart/form-data',
         'x-user-id': ownerId,
       },
+      timeout: 120000, // Allow up to 2 minutes for PDF chunking and vector embedding
     });
     return { success: true, data: response.data, error: null };
   } catch (error) {
@@ -158,7 +159,7 @@ export const getDocumentPages = async (documentId) => {
   }
 };
 
-export const deleteDocument = async (documentId, ownerId = 'anonymous_dev') => {
+export const deleteDocument = async (documentId, ownerId = 'anonymous_citizen') => {
   try {
     const response = await apiClient.delete(`/api/v1/documents/${documentId}`, {
       headers: { 'x-user-id': ownerId },
@@ -171,7 +172,7 @@ export const deleteDocument = async (documentId, ownerId = 'anonymous_dev') => {
 
 // ----------------- PHASE 3: DOCUMENT INTELLIGENCE (RAG & CHROMADB) -----------------
 
-export const indexDocument = async (documentId, ownerId = 'anonymous_dev') => {
+export const indexDocument = async (documentId, ownerId = 'anonymous_citizen') => {
   try {
     const response = await apiClient.post(`/api/v1/documents/${documentId}/index`, null, {
       headers: { 'x-user-id': ownerId },
@@ -231,7 +232,7 @@ export const queryAllDocuments = async (query, documentId = null, userId = 'anon
   }
 };
 
-export const getDocumentChunks = async (documentId, ownerId = 'anonymous_dev') => {
+export const getDocumentChunks = async (documentId, ownerId = 'anonymous_citizen') => {
   try {
     const response = await apiClient.get(`/api/v1/documents/${documentId}/chunks`, {
       headers: { 'x-user-id': ownerId },
@@ -292,6 +293,37 @@ export const listChatConversations = async (userId = 'anonymous_citizen') => {
     return { success: true, data: response.data, error: null };
   } catch (error) {
     return { success: false, data: null, error: getErrorMessage(error, 'Failed to list active conversations.') };
+  }
+};
+
+// ----------------- VOICE: SARVAM AI SPEECH-TO-TEXT & TEXT-TO-SPEECH -----------------
+
+export const convertSpeechToText = async (audioBlob, languageCode = 'unknown') => {
+  try {
+    const formData = new FormData();
+    const file = new File([audioBlob], 'recording.wav', { type: audioBlob.type || 'audio/wav' });
+    formData.append('file', file);
+
+    const response = await apiClient.post('/api/v1/voice/stt', formData, {
+      params: { language_code: languageCode },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Sarvam Speech-to-Text conversion failed.') };
+  }
+};
+
+export const convertTextToSpeech = async (text, languageCode = 'en-IN', speaker = null) => {
+  try {
+    const response = await apiClient.post('/api/v1/voice/tts', {
+      text,
+      language_code: languageCode,
+      speaker,
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Sarvam Text-to-Speech synthesis failed.') };
   }
 };
 

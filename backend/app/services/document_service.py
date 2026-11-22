@@ -35,6 +35,18 @@ class DocumentService:
     PDF_MAGIC_BYTES = b"%PDF-"
     MAX_FILE_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
+    @staticmethod
+    def _is_authorized(meta_owner: Optional[str], request_owner: Optional[str]) -> bool:
+        """Verify ownership with support for interchangeable anonymous aliases."""
+        if not meta_owner or not request_owner:
+            return True
+        if meta_owner == request_owner:
+            return True
+        anonymous_aliases = {"anonymous_citizen", "anonymous_dev"}
+        if meta_owner in anonymous_aliases and request_owner in anonymous_aliases:
+            return True
+        return False
+
     async def process_pdf_upload(
         self, file: UploadFile, owner_id: str = "anonymous_dev"
     ) -> DocumentUploadResponse:
@@ -131,7 +143,7 @@ class DocumentService:
         meta = self.get_document_metadata(document_id)
 
         # Verify ownership
-        if meta.owner_id and meta.owner_id != owner_id:
+        if not self._is_authorized(meta.owner_id, owner_id):
             raise ValidationError("You do not have authorization to index this document.")
 
         if meta.processing_status == "OCR_REQUIRED":
@@ -238,7 +250,7 @@ class DocumentService:
     ) -> DocumentChunksResponse:
         """Retrieves indexed chunks for a document with ownership verification."""
         meta = self.get_document_metadata(document_id)
-        if meta.owner_id and meta.owner_id != owner_id:
+        if meta.owner_id and not self._is_authorized(meta.owner_id, owner_id):
             raise ValidationError("You do not have authorization to view chunks for this document.")
 
         chunks = chroma_storage.get_document_chunks(document_id, user_id=owner_id)
@@ -261,7 +273,7 @@ class DocumentService:
         if document_id:
             # Validate document exists and check ownership if recorded
             meta = self.get_document_metadata(document_id)
-            if meta.owner_id and meta.owner_id != user_id and meta.owner_id != "anonymous_dev":
+            if meta.owner_id and not self._is_authorized(meta.owner_id, user_id):
                 raise ValidationError("You do not have authorization to query this document.")
 
         return await document_qa_service.answer_document_query(
@@ -301,7 +313,7 @@ class DocumentService:
             raise NotFoundError(f"Document with ID '{document_id}' was not found.")
 
         # Check ownership if specified
-        if owner_id and meta.owner_id and meta.owner_id != owner_id:
+        if owner_id and meta.owner_id and not self._is_authorized(meta.owner_id, owner_id):
             raise ValidationError("You do not have authorization to delete this document.")
 
         # 1. Remove physical file
