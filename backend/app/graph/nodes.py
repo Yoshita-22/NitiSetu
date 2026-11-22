@@ -88,17 +88,23 @@ def scheme_retrieval_node(state: NitiSetuState) -> Dict[str, Any]:
         }
 
 
-def document_retrieval_node(state: NitiSetuState) -> Dict[str, Any]:
-    """Retrieves uploaded document metadata and extracted text pages."""
+async def document_retrieval_node(state: NitiSetuState) -> Dict[str, Any]:
+    """Retrieves uploaded document context and synthesizes grounded answers using RAG."""
     entities = state.get("extracted_entities", {})
     doc_id = entities.get("document_id") or state.get("document_id")
+    user_id = state.get("user_id") or "anonymous_citizen"
+    query = state.get("user_query", "")
+    language = state.get("language", "en")
 
     try:
         if not doc_id:
-            # Check if any documents exist in repository
-            all_docs = document_service.list_documents()
-            if all_docs:
-                doc_id = all_docs[-1].document_id
+            # Check if any documents exist in repository for user or session
+            user_docs = document_service.list_documents(owner_id=user_id)
+            if not user_docs:
+                user_docs = document_service.list_documents()
+
+            if user_docs:
+                doc_id = user_docs[-1].document_id
             else:
                 return {
                     "document_results": [],
@@ -106,9 +112,16 @@ def document_retrieval_node(state: NitiSetuState) -> Dict[str, Any]:
                     "task_status": {"document_retrieval": "FAILED"},
                 }
 
-        pages_resp = document_service.get_document_pages(doc_id)
+        # Perform semantic vector retrieval & grounded QA
+        qa_response = await document_service.query_document(
+            query=query,
+            user_id=user_id,
+            document_id=doc_id,
+            language=language,
+        )
+
         return {
-            "document_results": [pages_resp.model_dump()],
+            "document_results": [qa_response.model_dump()],
             "task_status": {"document_retrieval": "COMPLETED"},
         }
     except Exception as e:

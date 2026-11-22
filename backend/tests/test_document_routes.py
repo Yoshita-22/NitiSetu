@@ -41,7 +41,7 @@ def test_upload_valid_pdf():
     assert "document_id" in data
     assert data["filename"] == "test_notice.pdf"
     assert data["page_count"] == 1
-    assert data["processing_status"] == "COMPLETED"
+    assert data["processing_status"] in ("COMPLETED", "INDEXED")
 
     doc_id = data["document_id"]
 

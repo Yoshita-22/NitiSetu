@@ -45,9 +45,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Uploads
-uploads/
-backend/uploads/
+# Uploads & Storage Data
+/uploads/
+/backend/uploads/
+/storage/
+/backend/storage/
 
 # Environment files
 .env

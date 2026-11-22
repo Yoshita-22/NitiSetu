@@ -169,6 +169,79 @@ export const deleteDocument = async (documentId, ownerId = 'anonymous_dev') => {
   }
 };
 
+// ----------------- PHASE 3: DOCUMENT INTELLIGENCE (RAG & CHROMADB) -----------------
+
+export const indexDocument = async (documentId, ownerId = 'anonymous_dev') => {
+  try {
+    const response = await apiClient.post(`/api/v1/documents/${documentId}/index`, null, {
+      headers: { 'x-user-id': ownerId },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to trigger document indexing.') };
+  }
+};
+
+export const getDocumentStatus = async (documentId) => {
+  try {
+    const response = await apiClient.get(`/api/v1/documents/${documentId}/status`);
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to retrieve document status.') };
+  }
+};
+
+export const querySpecificDocument = async (documentId, query, userId = 'anonymous_citizen', topK = 5) => {
+  try {
+    const trimmed = (query || '').trim();
+    if (!trimmed) {
+      return { success: false, data: null, error: 'Please enter a question about this document.' };
+    }
+    const response = await apiClient.post(`/api/v1/documents/${documentId}/query`, {
+      query: trimmed,
+      document_id: documentId,
+      user_id: userId,
+      top_k: topK,
+    }, {
+      headers: { 'x-user-id': userId },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Document RAG query failed.') };
+  }
+};
+
+export const queryAllDocuments = async (query, documentId = null, userId = 'anonymous_citizen', topK = 5) => {
+  try {
+    const trimmed = (query || '').trim();
+    if (!trimmed) {
+      return { success: false, data: null, error: 'Please enter a question.' };
+    }
+    const response = await apiClient.post('/api/v1/documents/query', {
+      query: trimmed,
+      document_id: documentId,
+      user_id: userId,
+      top_k: topK,
+    }, {
+      headers: { 'x-user-id': userId },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Multi-document RAG query failed.') };
+  }
+};
+
+export const getDocumentChunks = async (documentId, ownerId = 'anonymous_dev') => {
+  try {
+    const response = await apiClient.get(`/api/v1/documents/${documentId}/chunks`, {
+      headers: { 'x-user-id': ownerId },
+    });
+    return { success: true, data: response.data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to load document chunks.') };
+  }
+};
+
 // ----------------- PHASE 2: INTELLIGENT LANGGRAPH CHAT ORCHESTRATION -----------------
 
 export const sendChatQuery = async (conversationId, message, documentId = null, userId = 'anonymous_citizen') => {

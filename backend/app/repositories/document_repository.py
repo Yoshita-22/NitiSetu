@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from threading import Lock
 from app.schemas.document_schemas import DocumentMetadata, DocumentPage
 
@@ -29,6 +29,20 @@ class DocumentRepository:
         """Retrieve metadata for a specific document."""
         with self._lock:
             return self._metadata_store.get(document_id)
+
+    def update_metadata(
+        self, document_id: str, updates: Dict[str, Any]
+    ) -> Optional[DocumentMetadata]:
+        """Updates specific fields of a document's metadata."""
+        with self._lock:
+            meta = self._metadata_store.get(document_id)
+            if not meta:
+                return None
+            data = meta.model_dump()
+            data.update(updates)
+            updated_meta = DocumentMetadata(**data)
+            self._metadata_store[document_id] = updated_meta
+            return updated_meta
 
     def get_pages(self, document_id: str) -> Optional[List[DocumentPage]]:
         """Retrieve extracted pages for a specific document."""

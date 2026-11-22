@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     SUPABASE_URL: Optional[str] = None
     SUPABASE_KEY: Optional[str] = None
 
+    # Phase 3: Document RAG & Vector Search Configuration
+    CHROMA_PERSIST_DIRECTORY: str = "storage/chroma"
+    EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    DOCUMENT_CHUNK_SIZE: int = 800
+    DOCUMENT_CHUNK_OVERLAP: int = 150
+    DOCUMENT_RETRIEVAL_TOP_K: int = 5
+    DOCUMENT_RETRIEVAL_THRESHOLD: float = 0.35
+
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: Union[List[str], str]) -> List[str]:

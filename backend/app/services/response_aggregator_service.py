@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from app.repositories.document_repository import document_repository
 from app.schemas.chat_query_schema import ChatQueryResponse, ExecutionStatus, PendingQuestion
 
 
@@ -70,40 +71,73 @@ class ResponseAggregatorService:
                 },
             }
 
-        # 2. DOCUMENT INTELLIGENCE COMPONENT
+        # 2. DOCUMENT INTELLIGENCE COMPONENT (PHASE 3 RAG)
         if doc_results:
             for doc in doc_results:
-                fname = doc.get("original_filename", "Uploaded Document")
-                total_p = doc.get("total_pages", len(doc.get("pages", [])))
-                status = doc.get("processing_status", "COMPLETED")
+                if "answer" in doc:
+                    # Grounded RAG answer from DocumentQAService
+                    rag_answer = doc.get("answer", "")
+                    grounding = doc.get("grounding_status", "GROUNDED")
+                    answer_parts.append(f"📄 **Uploaded Document Findings:**\n{rag_answer}")
 
-                if status == "OCR_REQUIRED":
-                    answer_parts.append(
-                        f"📄 **Uploaded Document ({fname}):**\n"
-                        f"This document contains {total_p} page(s) but has negligible extractable digital text. "
-                        "It appears to be a scanned notice or image-based circular requiring OCR."
-                    )
+                    doc_sources = doc.get("sources", [])
+                    if doc_sources:
+                        for s in doc_sources:
+                            p_num = s.get("page_number", s.get("page_start", 1))
+                            fname = s.get("filename", "Uploaded Notice")
+                            sources.append({
+                                "title": f"{fname} (Page {p_num})",
+                                "source": "Uploaded Citizen Document",
+                                "type": "uploaded_user_pdf",
+                                "url": f"document://{s.get('document_id')}",
+                                "details": f"Page {p_num} excerpt (Grounding: {grounding})",
+                            })
+                    else:
+                        doc_id = doc.get("document_id")
+                        fname = "Uploaded Document"
+                        if doc_id:
+                            meta = document_repository.get_metadata(doc_id)
+                            if meta:
+                                fname = meta.original_filename
+                        sources.append({
+                            "title": f"Document: {fname}",
+                            "source": "Uploaded Citizen Document",
+                            "type": "uploaded_user_pdf",
+                            "url": f"document://{doc_id}",
+                            "details": f"Uploaded document analyzed (Grounding: {grounding})",
+                        })
                 else:
-                    pages = doc.get("pages", [])
-                    preview_texts = []
-                    for p in pages[:2]:
-                        p_num = p.get("page_number", 1)
-                        snippet = p.get("text", "")[:350]
-                        if snippet:
-                            preview_texts.append(f"- *Page {p_num}:* {snippet}...")
-                    
-                    preview_joined = "\n".join(preview_texts) if preview_texts else "Digital text extracted successfully."
-                    answer_parts.append(
-                        f"📄 **Uploaded Document Analysis ({fname} - {total_p} Page(s)):**\n{preview_joined}"
-                    )
+                    fname = doc.get("original_filename", "Uploaded Document")
+                    total_p = doc.get("total_pages", len(doc.get("pages", [])))
+                    status = doc.get("processing_status", "COMPLETED")
 
-                sources.append({
-                    "title": f"Document: {fname}",
-                    "source": "Uploaded Citizen Document",
-                    "type": "uploaded_user_pdf",
-                    "url": f"document://{doc.get('document_id')}",
-                    "details": f"{total_p} page(s) processed with PyMuPDF",
-                })
+                    if status == "OCR_REQUIRED":
+                        answer_parts.append(
+                            f"📄 **Uploaded Document ({fname}):**\n"
+                            f"This document contains {total_p} page(s) but has negligible extractable digital text. "
+                            "It appears to be a scanned notice or image-based circular requiring OCR."
+                        )
+                    else:
+                        pages = doc.get("pages", [])
+                        preview_texts = []
+                        for p in pages[:2]:
+                            p_num = p.get("page_number", 1)
+                            snippet = p.get("text", "")[:350]
+                            if snippet:
+                                preview_texts.append(f"- *Page {p_num}:* {snippet}...")
+
+                        preview_joined = "\n".join(preview_texts) if preview_texts else "Digital text extracted successfully."
+                        answer_parts.append(
+                            f"📄 **Uploaded Document Analysis ({fname} - {total_p} Page(s)):**\n{preview_joined}"
+                        )
+
+                    sources.append({
+                        "title": f"Document: {fname}",
+                        "source": "Uploaded Citizen Document",
+                        "type": "uploaded_user_pdf",
+                        "url": f"document://{doc.get('document_id')}",
+                        "details": f"{total_p} page(s) processed with PyMuPDF",
+                    })
 
         # 3. SCHEME DETAILS COMPONENT
         if scheme_results:
