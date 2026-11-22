@@ -1,0 +1,181 @@
+[
+  {
+    "scheme_id": "PM_KISAN",
+    "scheme_name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+    "short_description": "Central sector income support scheme providing Rs. 6,000 annually to all landholding farmer families across India.",
+    "ministry": "Ministry of Agriculture and Farmers Welfare",
+    "target_beneficiaries": "Small and marginal landholding farmer families",
+    "state_applicability": "All India",
+    "data_source": "verified_demo_dataset",
+    "official_source_url": "https://pmkisan.gov.in/",
+    "last_verified": "2025-01-15",
+    "benefits": [
+      "Direct income support of Rs. 6,000 per year transferred directly into verified bank accounts.",
+      "Disbursed in three equal four-monthly installments of Rs. 2,000 each (April-July, August-November, December-March).",
+      "Direct Benefit Transfer (DBT) via Aadhaar-seeded NPCI bank account."
+    ],
+    "eligibility_conditions": [
+      "Applicant must be an Indian citizen.",
+      "The farmer family (husband, wife, and minor children) must own cultivable agricultural land as per official state land revenue records.",
+      "Landholding records must be updated in the state land database.",
+      "Bank account must be Aadhaar-linked and active with biometric/eKYC completed."
+    ],
+    "exclusion_conditions": [
+      "Institutional landholders are strictly ineligible.",
+      "Farmer families where any member holds or held constitutional posts (e.g. President, Vice President, Governors, Ministers, MPs, MLAs, Mayors).",
+      "Serving or retired officers and employees of Central/State Government Ministries, Departments, or PSUs (excluding Multi-Tasking Staff / Group D / Class IV).",
+      "All superannuated / retired pensioners whose monthly pension is Rs. 10,000 or more (excluding Group D / MTS).",
+      "All persons who paid income tax in the last assessment year.",
+      "Professionals like Doctors, Engineers, Lawyers, Chartered Accountants, and Architects registered with professional bodies and carrying out practice."
+    ],
+    "required_documents": [
+      "Aadhaar Card with mobile number linked for eKYC",
+      "Land ownership documents / RoR (Record of Rights) / Pattadar Passbook / Khatauni",
+      "Aadhaar-seeded bank passbook / account statement",
+      "Self-declaration certificate on non-exclusion criteria"
+    ]
+  },
+  {
+    "scheme_id": "AYUSHMAN_BHARAT",
+    "scheme_name": "Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (PM-JAY)",
+    "short_description": "World's largest public health assurance scheme providing Rs. 5 lakh annual hospitalization cover per family for secondary and tertiary care.",
+    "ministry": "Ministry of Health and Family Welfare (National Health Authority)",
+    "target_beneficiaries": "Bottom 40% vulnerable rural and urban households and all citizens aged 70+",
+    "state_applicability": "All India (participating States/UTs)",
+    "data_source": "verified_demo_dataset",
+    "official_source_url": "https://pmjay.gov.in/",
+    "last_verified": "2025-01-15",
+    "benefits": [
+      "Cashless and paperless access to health services up to Rs. 5,00,000 per family per year.",
+      "Covers pre-existing conditions from day one.",
+      "Covers up to 3 days of pre-hospitalization and 15 days of post-hospitalization diagnostic and medicine expenses.",
+      "Expanded Ayushman Vay Vandana card providing top-up Rs. 5 lakh cover to all senior citizens aged 70 and above regardless of income."
+    ],
+    "eligibility_conditions": [
+      "Rural households satisfying SECC 2011 deprivation criteria (D1: only 1 room with kucha walls/roof, D2: no adult member 16-59, D3: female headed without adult male, D4: disabled member with no able-bodied adult, D5: SC/ST, D7: landless manual casual labor).",
+      "Urban households belonging to 11 occupational categories (ragpickers, domestic workers, street vendors, transport drivers, construction workers, sanitation workers, etc.).",
+      "OR any individual aged 70 years and above (under the Senior Citizen Ayushman Vay Vandana sub-scheme)."
+    ],
+    "exclusion_conditions": [
+      "Households owning motorized 2/3/4 wheelers or fishing boats with motors.",
+      "Households owning mechanized agricultural equipment (tractors/harvesters).",
+      "Households with any family member who is a regular government employee.",
+      "Households with non-agricultural enterprises registered with the government.",
+      "Households paying professional tax or income tax."
+    ],
+    "required_documents": [
+      "Aadhaar Card / Government Photo ID",
+      "Ration Card / PM-JAY Family ID / SECC confirmation",
+      "Age proof (for senior citizen 70+ category)"
+    ]
+  },
+  {
+    "scheme_id": "PMAY_G",
+    "scheme_name": "Pradhan Mantri Awaas Yojana - Gramin (PMAY-G)",
+    "short_description": "Flagship rural housing scheme providing financial assistance for construction of permanent pucca houses with basic amenities.",
+    "ministry": "Ministry of Rural Development",
+    "target_beneficiaries": "Houseless rural families and those living in dilapidated/kutcha houses",
+    "state_applicability": "All India (Rural Areas)",
+    "data_source": "verified_demo_dataset",
+    "official_source_url": "https://pmayg.nic.in/",
+    "last_verified": "2025-01-15",
+    "benefits": [
+      "Financial grant of Rs. 1,20,000 per unit in plain areas.",
+      "Financial grant of Rs. 1,30,000 per unit in hilly states, difficult areas, and Integrated Action Plan (IAP) tribal districts.",
+      "90 to 95 days of unskilled manual labor wage under MGNREGS (approx. Rs. 20,000+).",
+      "Additional Rs. 12,000 for household sanitary latrine construction under Swachh Bharat Mission (Gramin).",
+      "LPG connection support under PM Ujjwala Yojana and electricity connection under Saubhagya."
+    ],
+    "eligibility_conditions": [
+      "Must be a rural resident family.",
+      "The family must be houseless or living in kutcha houses (zero, one, or two rooms with kutcha walls and kutcha roof) as prioritized by SECC 2011 and Awaas+ list.",
+      "Neither the applicant nor any family member must own a pucca permanent house anywhere in India."
+    ],
+    "exclusion_conditions": [
+      "Ownership of motorized two, three, or four-wheelers, or mechanized boats.",
+      "Ownership of mechanized agricultural equipment or tractor.",
+      "Having a Kisan Credit Card (KCC) with credit limit of Rs. 50,000 or above.",
+      "Households where at least one member is a government employee.",
+      "Households with non-agricultural enterprise registered with government.",
+      "Households with any member paying income tax or professional tax.",
+      "Households with landline phone or owning 2.5 acres or more of irrigated land."
+    ],
+    "required_documents": [
+      "Aadhaar Card of all adult household members",
+      "MGNREGA Job Card Number",
+      "Bank Account Passbook (Aadhaar linked)",
+      "Swachh Bharat Mission registration number",
+      "Land ownership or land possession certificate / consent from local Gram Panchayat"
+    ]
+  },
+  {
+    "scheme_id": "NSP_CSSS",
+    "scheme_name": "Central Sector Scheme of Scholarship for College and University Students (NSP-CSSS)",
+    "short_description": "Merit-cum-means scholarship providing financial support to meritorious students from low-income families pursuing regular higher education.",
+    "ministry": "Department of Higher Education, Ministry of Education",
+    "target_beneficiaries": "Meritorious undergraduate and postgraduate students",
+    "state_applicability": "All India",
+    "data_source": "verified_demo_dataset",
+    "official_source_url": "https://scholarships.gov.in/",
+    "last_verified": "2025-01-15",
+    "benefits": [
+      "Undergraduate: Rs. 12,000 per annum for the first three years of college.",
+      "Postgraduate: Rs. 20,000 per annum for 4th and 5th years (master's degree or integrated programs).",
+      "Technical courses (B.Tech/MBBS): Rs. 20,000 per annum in the 4th and 5th year.",
+      "Disbursed directly via Direct Benefit Transfer (DBT) into student's bank account."
+    ],
+    "eligibility_conditions": [
+      "Student must have scored above the 80th percentile in the relevant stream in Class 12 (10+2 pattern) examination from a recognized State/Central Board.",
+      "Must be pursuing regular full-time undergraduate or postgraduate courses in a college or institution recognized by AICTE, UGC, or MCI.",
+      "Gross annual parental / family income must not exceed Rs. 4,50,000 per annum.",
+      "Applicant must not be availing of any other state or central scholarship or fee concession."
+    ],
+    "exclusion_conditions": [
+      "Students pursuing diploma courses, vocational courses, or distance/correspondence education.",
+      "Parental annual income exceeding Rs. 4.5 lakh.",
+      "Students receiving any other scholarship or stipend from Central or State Government.",
+      "Students scoring below 50% marks in semester renewal examinations or failing attendance norms."
+    ],
+    "required_documents": [
+      "Class 12 Passing Certificate and Marksheet showing percentile score",
+      "Income Certificate issued by competent Revenue Authority (Tehsildar/SDM)",
+      "College Admission Bonafide Certificate / Fee Receipt with Institute AISHE code",
+      "Aadhaar Card",
+      "Bank Account details in student's name (Aadhaar seeded)"
+    ]
+  },
+  {
+    "scheme_id": "TELANGANA_RYTHU_BANDHU",
+    "scheme_name": "Rythu Bandhu / Rythu Bharosa (Agriculture Investment Support)",
+    "short_description": "Telangana government's pioneer input assistance scheme providing Rs. 10,000 to Rs. 15,000 per acre per year for agriculture and horticulture crops.",
+    "ministry": "Department of Agriculture, Government of Telangana",
+    "target_beneficiaries": "Farmer pattadars cultivating agricultural land in Telangana",
+    "state_applicability": "Telangana",
+    "data_source": "verified_demo_dataset",
+    "official_source_url": "https://rythubandhu.telangana.gov.in/",
+    "last_verified": "2025-01-15",
+    "benefits": [
+      "Direct financial grant of Rs. 5,000 per acre per season (Rs. 10,000 per acre per year, enhanced under Rythu Bharosa framework up to Rs. 15,000).",
+      "Granted for both Kharif (monsoon) and Rabi (winter) crop cycles.",
+      "No restriction on crop type or harvest output; funds cover seeds, fertilizer, labor, and crop maintenance.",
+      "Disbursed directly into farmers' bank accounts through electronic Treasury DBT."
+    ],
+    "eligibility_conditions": [
+      "Applicant must be a permanent resident farmer of Telangana State.",
+      "Must be an agricultural land titleholder with an active digital Pattadar Passbook issued through the Dharani portal (e-Pattadar Passbook).",
+      "The land must be cultivable agricultural land registered in the revenue department database."
+    ],
+    "exclusion_conditions": [
+      "Non-agricultural land, real estate layouts, and commercial industrial plots are strictly excluded.",
+      "Land not recorded or recognized in the CCLA / Dharani portal database.",
+      "Tenant farmers (who do not hold ownership Pattadar titles in their own name) are not covered under Rythu Bandhu directly.",
+      "Government-owned or forest lands without registered pattadar titles."
+    ],
+    "required_documents": [
+      "Dharani digital Pattadar Passbook / Passbook Number",
+      "Aadhaar Card",
+      "Bank Account details linked with Aadhaar in Telangana",
+      "Survey number and land extent details registered with Agriculture Extension Officer (AEO)"
+    ]
+  }
+]
